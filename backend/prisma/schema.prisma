@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String               @id @default(uuid())
+  email        String               @unique
+  passwordHash String
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  profile      Profile?
+  expenses     UserMonthlyExpense[]
+  statements   Statement[]
+}
+
+model Profile {
+  userId             String   @id
+  fullName           String
+  dob                DateTime
+  city               String
+  incomeRangeMonthly Float
+  primaryBank        String
+  consentAccepted    Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  user               User     @relation(fields: [userId], references: [id])
+}
+
+model ExpenseCategory {
+  key         String               @id
+  displayName String
+  expenses    UserMonthlyExpense[] // <-- Added inverse relation
+}
+
+model UserMonthlyExpense {
+  id          Int      @id @default(autoincrement())
+  userId      String
+  categoryKey String
+  amount      Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user     User            @relation(fields: [userId], references: [id])
+  category ExpenseCategory @relation(fields: [categoryKey], references: [key])
+
+  @@unique([userId, categoryKey])
+}
+
+model Statement {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  content   String
+  createdAt DateTime @default(now())
+}
